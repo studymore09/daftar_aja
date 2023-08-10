@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Pendaftaran Sekolah</title>
+    <style>
+        /* Gaya CSS Anda */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333333;
+        }
+
+        form label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select,
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 20px;
+            background: url("down-arrow.png") no-repeat right #ffffff;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .delete-button {
+            background-color: #ff5050;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background-color: #ff0000;
+        }
+
+        .print-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .print-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Form Pendaftaran Sekolah</h1>
+        <form id="registrationForm">
+            <label for="nama">Nama Lengkap:</label>
+            <input type="text" id="nama" name="nama" required><br><br>
+
+            <label for="email">Alamat Email:</label>
+            <input type="email" id="email" name="email" required><br><br>
+
+            <label for="kelas">Kelas yang Diinginkan:</label>
+            <select id="kelas" name="kelas" required>
+                <option value="">Pilih Kelas</option>
+                <option value="X">Kelas X</option>
+                <option value="XI">Kelas XI</option>
+                <option value="XII">Kelas XII</option>
+            </select><br><br>
+
+            <input type="submit" value="Daftar">
+        </form>
+
+        <h1>Data Pendaftaran Sekolah</h1>
+        <label for="adminCode">Masukkan Kode Admin:</label>
+        <input type="password" id="adminCode">
+        <button onclick="authenticate()">Masuk</button>
+        <button class="print-button" onclick="exportToExcel()">Cetak Data</button>
+        <table>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Kelas</th>
+                <th>Aksi</th>
+            </tr>
+            <tbody id="registrationData">
+                <!-- Data pendaftaran akan ditampilkan di sini -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script>
+        const form = document.getElementById("registrationForm");
+        let registrations = [];
+        let authenticated = false;
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+
+            // Simpan data pendaftaran dalam penyimpanan lokal
+            const data = {
+                nama: formData.get("nama"),
+                email: formData.get("email"),
+                kelas: formData.get("kelas"),
+            };
+
+            registrations.push(data);
+            localStorage.setItem("registrations", JSON.stringify(registrations));
+
+            displayData();
+        });
+
+        function authenticate() {
+            const adminCodeInput = document.getElementById("adminCode");
+            const adminCode = adminCodeInput.value;
+
+            if (adminCode === "muhder11") {
+                authenticated = true;
+                displayData();
+            } else {
+                alert("Kode admin salah. Harap coba lagi.");
+                adminCodeInput.value = "";
+                authenticated = false;
+            }
+        }
+
+        function displayData() {
+            const registrationData = document.getElementById("registrationData");
+
+            registrations = JSON.parse(localStorage.getItem("registrations")) || [];
+
+            if (registrations.length > 0) {
+                registrationData.innerHTML = registrations
+                    .map(
+                        (registration, index) => `
+                        <tr>
+                            <td>${registration.nama}</td>
+                            <td>${registration.email}</td>
+                            <td>${registration.kelas}</td>
+                            <td>${authenticated ? `<button class="delete-button" onclick="deleteRegistration(${index})">Hapus</button>` : ""}</td>
+                        </tr>
+                    `
+                    )
+                    .join("");
+            } else {
+                registrationData.innerHTML = "<tr><td colspan='4'>Tidak ada data pendaftaran yang tersedia.</td></tr>";
+            }
+        }
+
+        function deleteRegistration(index) {
+            if (!authenticated) {
+                alert("Anda harus masuk terlebih dahulu menggunakan kode admin.");
+                return;
+            }
+
+            registrations.splice(index, 1);
+            localStorage.setItem("registrations", JSON.stringify(registrations));
+            displayData();
+        }
+
+        function exportToExcel() {
+            const worksheet = XLSX.utils.json_to_sheet(registrations);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pendaftaran");
+            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+            const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "data_pendaftaran.xlsx");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
